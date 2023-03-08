@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pwgen</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: #24272c;
+      }
+      h1 {
+        all: unset;
+        color: #b0b0b0;
+        text-align: center;
+      }
+      h1:hover {
+        color: #55b587;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>#</h1>
+    <script>
+      const h1 = document.body.querySelector("h1");
+      h1.ariaValueText = 'click to copy'
+
+      function copy(text) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            console.log("copied to clipboard");
+          })
+          .catch((err) => {
+            console.error("failed to copy to clipboard", err);
+          })
+          .finally(() => {
+            console.log("copy:", text);
+          });
+      }
+
+      function applyR3devAlgorithm(token) {
+        let result = token.split(".").pop();
+        result = result.replace(/\//g, "#");
+        result = result.replace(/\+/g, "$");
+        result = result.replace(/=/g, "@");
+        if (!["#", "$", "@"].some((c) => result.includes(c))) {
+          result = result + "#";
+        }
+        return result
+      }
+
+      async function createToken(secret) {
+        const header = {
+          alg: "HS256",
+          typ: "JWT",
+        };
+
+        const payload = secret
+
+        const encodedHeader = btoa(JSON.stringify(header));
+        const encodedPayload = btoa(JSON.stringify(payload));
+
+        const tokenBody = `${encodedHeader}.${encodedPayload}`;
+        const secretKey = secret;
+
+        const encoder = new TextEncoder();
+        const data = encoder.encode(tokenBody);
+
+        const key = await crypto.subtle.importKey(
+          "raw",
+          encoder.encode(secret),
+          { name: "HMAC", hash: { name: "SHA-256" } },
+          false,
+          ["sign"]
+        );
+
+        const signature = await crypto.subtle.sign("HMAC", key, data);
+
+        const tokenSignature = btoa(
+          String.fromCharCode(...new Uint8Array(signature))
+        );
+
+        return `${tokenBody}.${tokenSignature}`;
+      }
+
+      function openPrompt() {
+        const input = prompt("Key");
+        createToken(input)
+          .then((token) => {
+            const result = applyR3devAlgorithm(token);
+            console.log({ result });
+            h1.textContent = result;
+            h1.onclick = () => {
+              copy(result);
+              h1.textContent = `${result} \ncopied to clipboard`;
+            };
+          })
+          .catch((err) => {
+            alert("generate error - check console");
+            console.error("generate error", err);
+          });
+      }
+
+      openPrompt();
+    </script>
+  </body>
+</html>
