@@ -12,22 +12,75 @@
         align-items: center;
         height: 100vh;
         background: #24272c;
+        font-family: "Roboto", sans-serif;
       }
-      h1 {
+      dialog {
         all: unset;
         color: #b0b0b0;
         text-align: center;
       }
-      h1:hover {
-        color: #55b587;
+      input {
+        all: unset;
+        background: #24272c;
+        border: 1px solid #b0b0b0;
+        border-radius: 4px;
+        padding: 8px;
+        font-size: 16px;
+        color: #b0b0b0;
+      }
+      button {
+        all: unset;
+        background: #24272c;
+        border: 1px solid #b0b0b0;
+        border-radius: 4px;
+        padding: 8px;
+        font-size: 16px;
+        color: #b0b0b0;
+        cursor: pointer;
+      }
+      button:focus {
+        outline: none;
+        border: 1px solid #55b587;
       }
     </style>
   </head>
   <body>
-    <h1>#</h1>
+
+    <dialog open>
+      <label for="password">K</label>
+      <input type="password" autofocus />
+      <button>G</button>
+    </dialog>
+
     <script>
-      const h1 = document.body.querySelector("h1");
-      h1.ariaValueText = 'click to copy'
+      const [dialog, input, button] = document.body.querySelectorAll("dialog, input, button");
+      let wasJustGenerated = false;
+
+      button.onclick = generate;
+
+      button.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+          button.click();
+        } else {
+          if (wasJustGenerated) {
+            input.focus();
+            input.value = e.key;
+            wasJustGenerated = false;
+          }
+        }
+      });
+
+      input.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+          button.focus();
+          button.click();
+        }
+      });
+
+      input.onfocus = () => {
+        input.value = '';
+        input.style.color = "#b0b0b0";
+      };
 
       function copy(text) {
         navigator.clipboard
@@ -88,25 +141,21 @@
         return `${tokenBody}.${tokenSignature}`;
       }
 
-      function openPrompt() {
-        const input = prompt("Key");
-        createToken(input)
+      function generate() {
+        const key = input.value;
+        console.log("key:", key);
+        createToken(key)
           .then((token) => {
             const result = applyR3devAlgorithm(token);
-            console.log({ result });
-            h1.textContent = result;
-            h1.onclick = () => {
-              copy(result);
-              h1.textContent = `${result} \ncopied to clipboard`;
-            };
+            copy(result);
+            input.style.color = "#55b587";
+            wasJustGenerated = true;
           })
           .catch((err) => {
             alert("generate error - check console");
             console.error("generate error", err);
           });
       }
-
-      openPrompt();
     </script>
   </body>
 </html>
